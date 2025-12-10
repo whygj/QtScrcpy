@@ -44,8 +44,6 @@ jobs:
     # 使用表达式语法${{}}访问上下文 https://help.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions
     env:
       target-name: QtScrcpy
-      vcvarsall-path: 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
-      vcinstall-path: 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC'
       qt-install-path: ${{ github.workspace }}/${{ matrix.qt-ver }}
       plantform-des: win
     # 步骤
@@ -69,17 +67,21 @@ jobs:
           arch: ${{ matrix.qt-arch }}
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
       # 拉取代码
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'true'
           ssh-key: ${{ secrets.BOT_SSH_KEY }}
+      
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc-arch }}
+
       # 编译msvc
       - name: Build MSVC
         # shell介绍 https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#using-a-specific-shell
         shell: cmd
         env:
-          ENV_VCVARSALL: ${{ env.vcvarsall-path }}
           ENV_QT_PATH: ${{ env.qt-install-path }}
         run: |
           call python ci\generate-version.py
@@ -89,20 +91,18 @@ jobs:
         shell: bash
         id: get-version
         # ${ GITHUB_REF/refs\/tags\// }是linux shell ${}的变量替换语法
-        run: echo ::set-output name=version::${GITHUB_REF##*/}
+        run: echo "version=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
       # tag 打包
       - name: Package
         id: package
         env:
-          ENV_VCVARSALL: ${{ env.vcvarsall-path }}
-          ENV_VCINSTALL: ${{ env.vcinstall-path }}
           ENV_QT_PATH: ${{ env.qt-install-path }}
           publish_name: ${{ env.target-name }}-${{ env.plantform-des }}-${{ matrix.msvc-arch }}-${{ steps.get-version.outputs.version }}
         run: |
           cmd.exe /c ci\win\publish_for_win.bat ${{ matrix.msvc-arch }} ..\build\${{ env.publish_name }}
           # 打包zip
           Compress-Archive -Path ci\build\${{ env.publish_name }} ci\build\${{ env.publish_name }}.zip
-          echo "::set-output name=package-name::${{ env.publish_name }}"
+          echo "package-name=${{ env.publish_name }}" >> $GITHUB_OUTPUT
       # 上传artifacts
       # https://help.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts
       - uses: actions/upload-artifact@v4
@@ -112,7 +112,7 @@ jobs:
       # Upload to release
       - name: Upload Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: svenstaro/upload-release-action@v1-release
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ci\build\${{ steps.package.outputs.package-name }}.zip

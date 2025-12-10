@@ -57,10 +57,12 @@ if /i %cpu_mode% == x86 (
 set PATH=%qt_msvc_path%;%PATH%
 
 :: 注册vc环境(注册以后，windeployqt会把vc_redist复制过来（vcruntime安装包）)
-if /i %cpu_mode% == x86 (
-    call %vcvarsall% %cpu_mode%
-) else (
-    call %vcvarsall% %cpu_mode%
+if defined ENV_VCVARSALL (
+    if /i %cpu_mode% == x86 (
+        call %vcvarsall% %cpu_mode%
+    ) else (
+        call %vcvarsall% %cpu_mode%
+    )
 )
 
 if exist %publish_path% (

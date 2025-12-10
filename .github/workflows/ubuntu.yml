@@ -39,7 +39,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y git ca-certificates sudo
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'true'
@@ -111,7 +111,7 @@ jobs:
       - name: Get the version
         shell: bash
         id: get-version
-        run: echo ::set-output name=version::${GITHUB_REF##*/}
+        run: echo "version=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
       - name: Package AppImage
         shell: bash
         env:
