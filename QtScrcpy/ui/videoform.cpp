@@ -594,7 +594,7 @@ void VideoForm::mousePressEvent(QMouseEvent *event)
             qreal x = localPos.x() / m_videoWidget->size().width();
             qreal y = localPos.y() / m_videoWidget->size().height();
             QString posTip = QString(R"("pos": {"x": %1, "y": %2})").arg(x).arg(y);
-            qInfo() << posTip.toStdString().c_str();
+            qInfo() << posTip;
         }
     } else {
         if (event->button() == Qt::LeftButton) {
