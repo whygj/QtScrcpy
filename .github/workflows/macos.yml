@@ -1,15 +1,22 @@
 name: MacOS
-on: 
+on:
   push:
+    branches:
+      - dev
+      - master
     paths:
       - 'QtScrcpy/**'
       - '!QtScrcpy/res/**'
       - '.github/workflows/macos.yml'
+      - 'ci/mac**'
+    tags:
+      - 'v*'
   pull_request:
     paths:
       - 'QtScrcpy/**'
       - '!QtScrcpy/res/**'
       - '.github/workflows/macos.yml'
+      - 'ci/mac**'
 jobs:
   build:
     name: Build
