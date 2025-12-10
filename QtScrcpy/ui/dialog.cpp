@@ -505,9 +505,42 @@ void Dialog::onDeviceConnected(bool success, const QString &serial, const QStrin
     auto videoForm = new VideoForm(ui->framelessCheck->isChecked(), Config::getInstance().getSkin(), ui->showToolbar->isChecked());
     videoForm->setSerial(serial);
 
-    qsc::IDeviceManage::getInstance().getDevice(serial)->setUserData(static_cast<void*>(videoForm));
-    qsc::IDeviceManage::getInstance().getDevice(serial)->registerDeviceObserver(videoForm);
+    auto device = qsc::IDeviceManage::getInstance().getDevice(serial);
+    device->setUserData(static_cast<void*>(videoForm));
+    device->registerDeviceObserver(videoForm);
 
+    // 连接文件传输完成信号，显示系统托盘通知
+    connect(device, &qsc::IDevice::fileTransferResult, this,
+        [this](bool success, bool isApk, const QString& message) {
+            if (m_hideIcon) {
+                QSystemTrayIcon::MessageIcon icon = success ?
+                    QSystemTrayIcon::Information : QSystemTrayIcon::Warning;
+                QString title = isApk ? tr("APK Installation") : tr("File Transfer");
+                m_hideIcon->showMessage(title, message, icon, 3000);
+            }
+        });
+
+    // 连接截图完成信号，显示系统托盘通知
+    connect(device, &qsc::IDevice::screenshotResult, this,
+        [this](bool success, const QString& filePath) {
+            if (m_hideIcon) {
+                if (success) {
+                    m_hideIcon->showMessage(
+                        tr("Screenshot"),
+                        tr("Saved to:\n%1").arg(filePath),
+                        QSystemTrayIcon::Information,
+                        3000
+                    );
+                } else {
+                    m_hideIcon->showMessage(
+                        tr("Screenshot Failed"),
+                        tr("Please set record path first in Start Config"),
+                        QSystemTrayIcon::Warning,
+                        3000
+                    );
+                }
+            }
+        });
 
     videoForm->showFPS(ui->fpsCheck->isChecked());
 
